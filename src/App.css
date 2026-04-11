@@ -150,7 +150,7 @@ body {
 /* ===== Tabs ===== */
 .tab-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   border-bottom: 1px solid var(--border);
 }
 
@@ -172,35 +172,22 @@ body {
 }
 
 .tab-active {
-
-
-.tab-nanoai.tab-active {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
-  border-bottom: 2px solid #f97316;
-}
   color: var(--cyan) !important;
   background: var(--bg-surface) !important;
   box-shadow: inset 0 -2px 0 var(--cyan);
 }
 
-/* ===== Tab Content ===== */
-.tab-content {
-  .tab-nanoai {
+.tab-nanoai {
   color: #f97316;
-  border-bottom: 2px solid #f97316;
 }
 
 .tab-nanoai.tab-active {
-  color: #f97316;
-  background: rgba(249, 115, 22, 0.1);
-  border-bottom: 2px solid #f97316;
+  color: #f97316 !important;
+  background: rgba(249, 115, 22, 0.08) !important;
+  box-shadow: inset 0 -2px 0 #f97316;
 }
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
+
+
 
 /* ===== Balance Badge ===== */
 .balance-badge {
