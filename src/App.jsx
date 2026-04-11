@@ -510,6 +510,7 @@ function NanoAITab() {
       >
         {loading ? 'Processing...' : 'Ask · $0.001 USDC'}
       </button>
+      <a href="https://faucet.circle.com" target="_blank" rel="noreferrer" className="btn btn-ghost btn-full" style={{ textAlign: 'center', textDecoration: 'none', color: '#f97316', borderColor: '#f97316' }}>Get testnet USDC →</a>
       {status && (
         <div className={`status-card status-${status.type}`}>
           {status.msg}
