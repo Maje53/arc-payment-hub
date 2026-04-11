@@ -456,7 +456,75 @@ function SwapTab({ adapter }) {
     </div>
   )
 }
-
+function NanoAITab() {
+  const [question, setQuestion] = useState('')
+  const [answer, setAnswer] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState(null)
+  async function handleAsk() {
+    if (!question.trim()) return
+    setLoading(true)
+    setAnswer('')
+    setStatus({ type: 'info', msg: 'Processing...' })
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'API error')
+      setAnswer(data.answer)
+      setStatus({ type: 'success', msg: '$0.001 USDC paid on Arc Testnet' })
+    } catch (e) {
+      setStatus({ type: 'error', msg: e.message || 'Error occurred.' })
+    } finally {
+      setLoading(false)
+    }
+  }
+  return (
+    <div className="tab-content">
+      <div className="chain-badge chain-arc chain-full">
+        <span className="chain-icon">◈</span>
+        <div>
+          <div className="chain-name">NanoAI — Pay per Question</div>
+          <div className="chain-sub">$0.001 USDC · Arc Testnet · Claude</div>
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Your question</label>
+        <textarea
+          className="form-input"
+          rows={3}
+          placeholder="Example: What is Arc Testnet?"
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          disabled={loading}
+          style={{ resize: 'vertical', minHeight: '80px' }}
+        />
+      </div>
+      <button
+        className="btn btn-primary btn-full"
+        onClick={handleAsk}
+        disabled={loading || !question.trim()}
+      >
+        {loading ? 'Processing...' : 'Ask · $0.001 USDC'}
+      </button>
+      {status && (
+        <div className={`status-card status-${status.type}`}>
+          {status.msg}
+        </div>
+      )}
+      {answer && (
+        <div className="info-box" style={{ marginTop: '12px' }}>
+          <div style={{ fontSize: '13px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+            {answer}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 function SendTab({ adapter }) {
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
@@ -579,8 +647,7 @@ function SendTab({ adapter }) {
   )
 }
 
-const TABS = ['Bridge', 'Swap', 'Send']
-
+const TABS = ['Bridge', 'Swap', 'Send', 'NanoAI']
 export default function App() {
   const [activeTab, setActiveTab] = useState('Bridge')
   const [adapter, setAdapter] = useState(null)
@@ -611,14 +678,14 @@ export default function App() {
                 className={`tab-btn ${activeTab === tab ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab(tab)}
               >
-                {tab === 'Bridge' ? '⇄ Bridge' : tab === 'Swap' ? '⇌ Swap' : '↗ Send'}
-              </button>
+              {tab === 'Bridge' ? 'Bridge' : tab === 'Swap' ? 'Swap' : tab === 'Send' ? 'Send' : 'NanoAI'}</button>
             ))}
           </div>
 
           {activeTab === 'Bridge' && <BridgeTab adapter={adapter} />}
           {activeTab === 'Swap' && <SwapTab adapter={adapter} />}
           {activeTab === 'Send' && <SendTab adapter={adapter} />}
+          {activeTab === 'NanoAI' && <NanoAITab />}
         </main>
 
         <footer className="app-footer">
