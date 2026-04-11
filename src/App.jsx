@@ -4,6 +4,8 @@ import { AppKit } from '@circle-fin/app-kit'
 import { createViemAdapterFromProvider } from '@circle-fin/adapter-viem-v2'
 import './App.css'
 
+const KIT_KEY = `KIT_KEY:${import.meta.env.VITE_KIT_KEY}`
+
 const kit = new AppKit()
 
 // Chain configs for balance fetching
@@ -282,6 +284,179 @@ function BridgeTab({ adapter }) {
   )
 }
 
+function SwapTab({ adapter }) {
+  const [amountIn, setAmountIn] = useState('')
+  const [status, setStatus] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [estimate, setEstimate] = useState(null)
+  const [estimating, setEstimating] = useState(false)
+  const [txHash, setTxHash] = useState('')
+  const [explorerUrl, setExplorerUrl] = useState('')
+
+  const { balance, loading: balLoading, refresh: refreshBalance } = useUsdcBalance(adapter, 'Arc_Testnet')
+
+  // Auto-estimate when amount changes
+  useEffect(() => {
+    if (!adapter || !amountIn || isNaN(amountIn) || Number(amountIn) <= 0) {
+      setEstimate(null)
+      return
+    }
+    const timer = setTimeout(async () => {
+      setEstimating(true)
+      try {
+        const est = await kit.estimateSwap({
+          from: { adapter, chain: 'Arc_Testnet' },
+          tokenIn: 'USDC',
+          tokenOut: 'EURC',
+          amountIn,
+          config: { kitKey: KIT_KEY, slippageBps: 300 },
+        })
+        setEstimate(est)
+      } catch {
+        setEstimate(null)
+      } finally {
+        setEstimating(false)
+      }
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [adapter, amountIn])
+
+  async function handleSwap() {
+    if (!adapter) return
+    if (!amountIn || isNaN(amountIn) || Number(amountIn) <= 0) {
+      setStatus({ type: 'error', msg: 'Enter a valid USDC amount.' })
+      return
+    }
+    setLoading(true)
+    setStatus({ type: 'info', msg: 'Swapping USDC → EURC on Arc Testnet…' })
+    setTxHash('')
+    setExplorerUrl('')
+    try {
+      const result = await kit.swap({
+        from: { adapter, chain: 'Arc_Testnet' },
+        tokenIn: 'USDC',
+        tokenOut: 'EURC',
+        amountIn,
+        config: { kitKey: KIT_KEY, slippageBps: 300 },
+      })
+      setTxHash(result.txHash || '')
+      setExplorerUrl(result.explorerUrl || '')
+      const received = result.amountOut ? `Received ${result.amountOut} EURC.` : ''
+      setStatus({ type: 'success', msg: `Swap completed! ${received}` })
+      refreshBalance()
+    } catch (e) {
+      setStatus({ type: 'error', msg: e.message || 'Swap failed.' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="tab-content">
+      {/* Balance */}
+      {adapter && (
+        <BalanceBadge balance={balance} loading={balLoading} chainName="Arc Testnet" />
+      )}
+
+      {/* Swap pair display */}
+      <div className="swap-pair">
+        <div className="swap-token-card">
+          <span className="swap-token-icon usdc-icon">$</span>
+          <div>
+            <div className="swap-token-name">USDC</div>
+            <div className="chain-sub">You pay</div>
+          </div>
+        </div>
+        <div className="swap-pair-arrow">→</div>
+        <div className="swap-token-card">
+          <span className="swap-token-icon eurc-icon">€</span>
+          <div>
+            <div className="swap-token-name">EURC</div>
+            <div className="chain-sub">You receive</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="info-box">
+        <div className="info-row">
+          <span>Network</span><span>Arc Testnet</span>
+        </div>
+        <div className="info-row">
+          <span>Slippage</span><span>3%</span>
+        </div>
+        <div className="info-row">
+          <span>Est. output</span>
+          <span>
+            {estimating
+              ? <span className="spinner-inline" />
+              : estimate
+                ? `${estimate.estimatedOutput.amount} EURC`
+                : '—'}
+          </span>
+        </div>
+        <div className="info-row">
+          <span>Min. received</span>
+          <span>
+            {estimate ? `${estimate.stopLimit.amount} EURC` : '—'}
+          </span>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label">Amount In (USDC)</label>
+        <div className="input-wrapper">
+          <input
+            className="form-input"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+            value={amountIn}
+            onChange={e => { setAmountIn(e.target.value); setEstimate(null) }}
+            disabled={loading || !adapter}
+          />
+          <span className="input-badge">USDC</span>
+        </div>
+      </div>
+
+      {!adapter && (
+        <p className="hint-text">Connect your wallet to swap tokens.</p>
+      )}
+
+      <button
+        className="btn btn-primary btn-full"
+        onClick={handleSwap}
+        disabled={loading || !adapter || !amountIn}
+      >
+        {loading ? <><span className="spinner" /> Swapping…</> : 'Swap USDC → EURC'}
+      </button>
+
+      {status && (
+        <div className={`status-card status-${status.type}`}>
+          <span className="status-icon">
+            {status.type === 'success' ? '✓' : status.type === 'error' ? '✕' : 'ℹ'}
+          </span>
+          {status.msg}
+        </div>
+      )}
+
+      {txHash && (
+        <div className="tx-hash">
+          <span className="tx-label">Transaction:</span>
+          <a
+            href={explorerUrl || `https://testnet.arcscan.app/tx/${txHash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="tx-link"
+          >
+            {txHash.slice(0, 10)}…{txHash.slice(-8)}
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SendTab({ adapter }) {
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
@@ -404,7 +579,7 @@ function SendTab({ adapter }) {
   )
 }
 
-const TABS = ['Bridge', 'Send']
+const TABS = ['Bridge', 'Swap', 'Send']
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Bridge')
@@ -436,12 +611,13 @@ export default function App() {
                 className={`tab-btn ${activeTab === tab ? 'tab-active' : ''}`}
                 onClick={() => setActiveTab(tab)}
               >
-                {tab === 'Bridge' ? '⇄ Bridge' : '↗ Send'}
+                {tab === 'Bridge' ? '⇄ Bridge' : tab === 'Swap' ? '⇌ Swap' : '↗ Send'}
               </button>
             ))}
           </div>
 
           {activeTab === 'Bridge' && <BridgeTab adapter={adapter} />}
+          {activeTab === 'Swap' && <SwapTab adapter={adapter} />}
           {activeTab === 'Send' && <SendTab adapter={adapter} />}
         </main>
 

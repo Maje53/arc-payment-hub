@@ -3,7 +3,16 @@
     "allow": [
       "Bash(npm run:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git remote:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(sed -n '12276,12400p' /c/Users/osman/Desktop/arc-project/arc-payment-hub/node_modules/@circle-fin/app-kit/index.d.ts)",
+      "Bash(sed -n '12960,13060p' /c/Users/osman/Desktop/arc-project/arc-payment-hub/node_modules/@circle-fin/app-kit/index.d.ts)",
+      "Bash(sed -n '12108,12180p' /c/Users/osman/Desktop/arc-project/arc-payment-hub/node_modules/@circle-fin/app-kit/index.d.ts)",
+      "Bash(sed -n '11976,12050p' /c/Users/osman/Desktop/arc-project/arc-payment-hub/node_modules/@circle-fin/app-kit/index.d.ts)"
     ]
   }
 }

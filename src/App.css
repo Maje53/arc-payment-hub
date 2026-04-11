@@ -150,7 +150,7 @@ body {
 /* ===== Tabs ===== */
 .tab-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   border-bottom: 1px solid var(--border);
 }
 
@@ -537,6 +537,71 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ===== Swap Pair ===== */
+.swap-pair {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.swap-token-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  flex: 1;
+}
+
+.swap-token-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.usdc-icon {
+  background: linear-gradient(135deg, #2775ca, #5da0e0);
+  color: #fff;
+}
+
+.eurc-icon {
+  background: linear-gradient(135deg, #003399, #4a7fd4);
+  color: #fff;
+}
+
+.swap-token-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.swap-pair-arrow {
+  font-size: 20px;
+  color: var(--cyan);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* inline spinner for estimate row */
+.spinner-inline {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(0,229,195,0.2);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
 }
 
 /* ===== Spinner dark variant (for light backgrounds) ===== */
