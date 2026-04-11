@@ -675,8 +675,7 @@ export default function App() {
             {TABS.map(tab => (
               <button
                 key={tab}
-                className={`tab-btn ${activeTab === tab ? 'tab-active' : ''}`}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setActiveTab(tab)}className={`tab-btn ${activeTab === tab ? 'tab-active' : ''} ${tab === 'NanoAI' ? 'tab-nanoai' : ''}`}
               >
               {tab === 'Bridge' ? 'Bridge' : tab === 'Swap' ? 'Swap' : tab === 'Send' ? 'Send' : 'NanoAI'}</button>
             ))}
