@@ -456,6 +456,38 @@ function SwapTab({ adapter }) {
     </div>
   )
 }
+function WalletStats({ adapter }) {
+  const { balance, loading } = useUsdcBalance(adapter, 'Arc_Testnet')
+  const [txCount, setTxCount] = useState(0)
+  const [totalSent, setTotalSent] = useState(0)
+
+  return (
+    <div style={{
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border)',
+      borderRadius: '12px',
+      padding: '16px',
+      margin: '0 0 4px 0',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: '16px'
+    }}>
+      <div>
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Arc Testnet Balance</div>
+        <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--cyan)' }}>
+          {loading ? '...' : `$${balance} USDC`}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '24px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Network</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>Arc Testnet · Live</div>
+        </div>
+      </div>
+    </div>
+  )
+}
 function NanoAITab() {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -555,7 +587,7 @@ function SendTab({ adapter }) {
         amount,
         token: 'USDC',
       })
-      const hash = result?.hash || ''
+      const hash = result?.hash || result?.txHash || result?.transactionHash || ''
       setTxHash(hash)
       setStatus({ type: 'success', msg: 'USDC sent successfully!' })
       refreshBalance()
@@ -681,7 +713,9 @@ export default function App() {
               {tab === 'Bridge' ? 'Bridge' : tab === 'Swap' ? 'Swap' : tab === 'Send' ? 'Send' : 'NanoAI'}</button>
             ))}
           </div>
-
+{adapter && (
+            <WalletStats adapter={adapter} />
+          )}
           {activeTab === 'Bridge' && <BridgeTab adapter={adapter} />}
           {activeTab === 'Swap' && <SwapTab adapter={adapter} />}
           {activeTab === 'Send' && <SendTab adapter={adapter} />}
