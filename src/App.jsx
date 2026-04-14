@@ -27,6 +27,27 @@ const CHAIN_CONFIGS = {
 async function fetchUsdcBalance(chainKey, address) {
   const cfg = CHAIN_CONFIGS[chainKey]
 
+  if (chainKey === 'Arc_Testnet') {
+    const res = await fetch(cfg.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_getBalance',
+        params: [address, 'latest'],
+        id: 1
+      })
+    })
+    const data = await res.json()
+    if (!data.result) return '0.00'
+    const raw = BigInt(data.result)
+    const divisor = 10n ** 18n
+    const whole = raw / divisor
+    const frac = raw % divisor
+    const fracStr = frac.toString().padStart(18, '0').slice(0, 2)
+    return `${whole}.${fracStr}`
+  }
+
   const res = await fetch(cfg.rpcUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,7 +61,6 @@ async function fetchUsdcBalance(chainKey, address) {
       id: 1
     })
   })
-
   const data = await res.json()
   if (!data.result || data.result === '0x') return '0.00'
   const raw = BigInt(data.result)
