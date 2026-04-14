@@ -27,16 +27,23 @@ const CHAIN_CONFIGS = {
 async function fetchUsdcBalance(chainKey, address) {
   const cfg = CHAIN_CONFIGS[chainKey]
 
-  const client = createPublicClient({
-    chain: { id: cfg.id, name: cfg.name, nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 }, rpcUrls: { default: { http: [cfg.rpcUrl] } } },
-    transport: http(cfg.rpcUrl),
+  const res = await fetch(cfg.rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_call',
+      params: [{
+        to: cfg.usdcAddress,
+        data: '0x70a08231000000000000000000000000' + address.slice(2).padStart(64, '0')
+      }, 'latest'],
+      id: 1
+    })
   })
-  const raw = await client.readContract({
-    address: cfg.usdcAddress,
-    abi: erc20Abi,
-    functionName: 'balanceOf',
-    args: [address],
-  })
+
+  const data = await res.json()
+  if (!data.result || data.result === '0x') return '0.00'
+  const raw = BigInt(data.result)
   const divisor = 10n ** 6n
   const whole = raw / divisor
   const frac = raw % divisor
@@ -54,7 +61,7 @@ function useUsdcBalance(adapter, chainKey) {
     if (!adapter) { setBalance(null); return }
     setLoading(true)
     try {
-      const address = await adapter.getAddress({ chain: chainKey === 'Arc_Testnet' ? 'eip155:5042002' : 'eip155:11155111' })
+      const address = await adapter.getAddress()
       const bal = await fetchUsdcBalance(chainKey, address)
       setBalance(bal)
     } catch(e) {
