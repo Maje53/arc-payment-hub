@@ -54,7 +54,7 @@ function useUsdcBalance(adapter, chainKey) {
     if (!adapter) { setBalance(null); return }
     setLoading(true)
     try {
-      const address = await adapter.getAddress()
+      const address = await adapter.getAddress({ chainId: CHAIN_CONFIGS[chainKey].id })
       const bal = await fetchUsdcBalance(chainKey, address)
       setBalance(bal)
     } catch(e) {
