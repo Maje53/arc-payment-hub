@@ -26,8 +26,9 @@ const CHAIN_CONFIGS = {
 
 async function fetchUsdcBalance(chainKey, address) {
   const cfg = CHAIN_CONFIGS[chainKey]
+
   const client = createPublicClient({
-    chain: { id: cfg.id, name: cfg.name, nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 }, rpcUrls: { default: { http: [cfg.rpcUrl] } } },
+    chain: { id: cfg.id, name: cfg.name, nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 6 }, rpcUrls: { default: { http: [cfg.rpcUrl] } } },
     transport: http(cfg.rpcUrl),
   })
   const raw = await client.readContract({
@@ -36,15 +37,10 @@ async function fetchUsdcBalance(chainKey, address) {
     functionName: 'balanceOf',
     args: [address],
   })
-  const decimals = await client.readContract({
-    address: cfg.usdcAddress,
-    abi: erc20Abi,
-    functionName: 'decimals',
-  })
-  const divisor = 10n ** BigInt(decimals)
+  const divisor = 10n ** 6n
   const whole = raw / divisor
   const frac = raw % divisor
-  const fracStr = frac.toString().padStart(Number(decimals), '0').slice(0, 2)
+  const fracStr = frac.toString().padStart(6, '0').slice(0, 2)
   return `${whole}.${fracStr}`
 }
 
@@ -54,13 +50,15 @@ function useUsdcBalance(adapter, chainKey) {
   const [loading, setLoading] = useState(false)
 
   const refresh = useCallback(async () => {
+    console.log('refresh called, adapter:', adapter)
     if (!adapter) { setBalance(null); return }
     setLoading(true)
     try {
       const address = await adapter.getAddress()
       const bal = await fetchUsdcBalance(chainKey, address)
       setBalance(bal)
-    } catch {
+    } catch(e) {
+  console.error('Balance error:', e)
       setBalance('—')
     } finally {
       setLoading(false)
@@ -457,33 +455,36 @@ function SwapTab({ adapter }) {
   )
 }
 function WalletStats({ adapter }) {
-  const { balance, loading } = useUsdcBalance(adapter, 'Arc_Testnet')
-  const [txCount, setTxCount] = useState(0)
-  const [totalSent, setTotalSent] = useState(0)
+  const [balance, setBalance] = useState('...')
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const address = await adapter.getAddress()
+        const res = await fetch('https://rpc.testnet.arc.network/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [address, 'latest'], id: 1 }),
+        })
+        const data = await res.json()
+        const raw = BigInt(data.result)
+        const whole = raw / 10n ** 18n
+        const frac = raw % 10n ** 18n
+        setBalance(whole + '.' + frac.toString().padStart(18, '0').slice(0, 2))
+      } catch { setBalance('—') }
+    }
+    load()
+  }, [adapter])
 
   return (
-    <div style={{
-      background: 'var(--bg-surface)',
-      border: '1px solid var(--border)',
-      borderRadius: '12px',
-      padding: '16px',
-      margin: '0 0 4px 0',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '16px'
-    }}>
+    <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', margin:'16px 16px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
       <div>
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Arc Testnet Balance</div>
-        <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--cyan)' }}>
-          {loading ? '...' : `$${balance} USDC`}
-        </div>
+        <div style={{ fontSize:'11px', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'4px' }}>Arc Testnet Balance</div>
+        <div style={{ fontSize:'22px', fontWeight:'700', color:'var(--cyan)' }}>${balance} USDC</div>
       </div>
-      <div style={{ display: 'flex', gap: '24px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Network</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>Arc Testnet · Live</div>
-        </div>
+      <div style={{ textAlign:'right' }}>
+        <div style={{ fontSize:'11px', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Network</div>
+        <div style={{ fontSize:'13px', color:'var(--text-secondary)', marginTop:'4px' }}>Arc Testnet · Live</div>
       </div>
     </div>
   )
@@ -704,6 +705,9 @@ export default function App() {
         </header>
 
         <main className="card">
+          {adapter && (
+            <WalletStats adapter={adapter} />
+          )}
           <div className="tab-bar">
             {TABS.map(tab => (
               <button
@@ -713,9 +717,6 @@ export default function App() {
               {tab === 'Bridge' ? 'Bridge' : tab === 'Swap' ? 'Swap' : tab === 'Send' ? 'Send' : 'NanoAI'}</button>
             ))}
           </div>
-{adapter && (
-            <WalletStats adapter={adapter} />
-          )}
           {activeTab === 'Bridge' && <BridgeTab adapter={adapter} />}
           {activeTab === 'Swap' && <SwapTab adapter={adapter} />}
           {activeTab === 'Send' && <SendTab adapter={adapter} />}
