@@ -61,7 +61,8 @@ function useUsdcBalance(adapter, chainKey) {
     if (!adapter) { setBalance(null); return }
     setLoading(true)
     try {
-      const address = await adapter.getAddress()
+      const address = kit.getAccount()?.address
+if (!address) { setBalance('-'); return }
       const bal = await fetchUsdcBalance(chainKey, address)
       setBalance(bal)
     } catch(e) {
