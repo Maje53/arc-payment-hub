@@ -61,7 +61,8 @@ function useUsdcBalance(adapter, chainKey) {
     if (!adapter) { setBalance(null); return }
     setLoading(true)
     try {
-      const address = kit.getAccount()?.address
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+const address = accounts[0]
 if (!address) { setBalance('-'); return }
       const bal = await fetchUsdcBalance(chainKey, address)
       setBalance(bal)
