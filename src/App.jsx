@@ -455,36 +455,18 @@ function SwapTab({ adapter }) {
   )
 }
 function WalletStats({ adapter }) {
-  const [balance, setBalance] = useState('...')
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const address = await adapter.getAddress()
-        const res = await fetch('https://rpc.testnet.arc.network/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [address, 'latest'], id: 1 }),
-        })
-        const data = await res.json()
-        const raw = BigInt(data.result)
-        const whole = raw / 10n ** 18n
-        const frac = raw % 10n ** 18n
-        setBalance(whole + '.' + frac.toString().padStart(18, '0').slice(0, 2))
-      } catch { setBalance('—') }
-    }
-    load()
-  }, [adapter])
+  const { balance: arcBalance, loading: arcLoading } = useUsdcBalance(adapter, 'Arc_Testnet')
+  const { balance: sepBalance, loading: sepLoading } = useUsdcBalance(adapter, 'Ethereum_Sepolia')
 
   return (
-    <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', margin:'16px 16px 0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+    <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:'12px', padding:'16px', margin:'16px 16px 0', display:'flex', justifyContent:'space-between' }}>
       <div>
         <div style={{ fontSize:'11px', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'4px' }}>Arc Testnet Balance</div>
-        <div style={{ fontSize:'22px', fontWeight:'700', color:'var(--cyan)' }}>${balance} USDC</div>
+        <div style={{ fontSize:'22px', fontWeight:'700', color:'var(--cyan)' }}>${arcLoading ? '...' : arcBalance} USDC</div>
       </div>
       <div style={{ textAlign:'right' }}>
-        <div style={{ fontSize:'11px', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Network</div>
-        <div style={{ fontSize:'13px', color:'var(--text-secondary)', marginTop:'4px' }}>Arc Testnet · Live</div>
+        <div style={{ fontSize:'11px', color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Sepolia Balance</div>
+        <div style={{ fontSize:'13px', color:'var(--text-secondary)', marginTop:'4px' }}>{sepLoading ? '...' : sepBalance} USDC</div>
       </div>
     </div>
   )
