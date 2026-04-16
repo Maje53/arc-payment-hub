@@ -500,6 +500,102 @@ function WalletStats({ adapter }) {
     </div>
   )
 }
+function GmCheckin({ adapter }) {
+  const [checking, setChecking] = useState(false)
+  const [txDays, setTxDays] = useState(new Set())
+  const [todayDone, setTodayDone] = useState(false)
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const today = now.getDate()
+
+  const monthName = new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(now)
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDay = new Date(year, month, 1).getDay()
+  const startOffset = (firstDay + 6) % 7
+
+  useEffect(() => {
+    if (!adapter) return
+    async function loadTxDays() {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        const address = accounts[0]
+        if (!address) return
+        const res = await fetch(`https://testnet.arcscan.app/api/v2/addresses/${address}/transactions`)
+        const data = await res.json()
+        const days = new Set()
+        const txList = data.items || []
+        txList.forEach(tx => {
+          const d = new Date(tx.timestamp)
+          if (d.getFullYear() === year && d.getMonth() === month) {
+            days.add(d.getDate())
+          }
+        })
+        setTxDays(days)
+        setTodayDone(days.has(today))
+      } catch (e) {
+        console.error('GM load error:', e)
+      }
+    }
+    loadTxDays()
+  }, [adapter])
+
+  async function handleGm() {
+    if (todayDone || checking) return
+    setChecking(true)
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+      const address = accounts[0]
+      await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: address, to: address, value: '0x0' }]
+      })
+      setTodayDone(true)
+      setTxDays(prev => new Set([...prev, today]))
+    } catch (e) {
+      console.error('GM tx error:', e)
+    }
+    setChecking(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: '12px', margin: '16px', flexWrap: 'wrap' }}>
+      {/* GM Butonu */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', flex: '0 0 140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Günlük GM</div>
+        <button
+          onClick={handleGm}
+          disabled={!adapter || todayDone || checking}
+          style={{ background: todayDone ? '#1a3a2a' : 'linear-gradient(135deg, #00b37e, #00d4aa)', border: 'none', borderRadius: '10px', padding: '14px 20px', color: todayDone ? '#00b37e' : '#000', fontSize: '22px', fontWeight: '800', cursor: todayDone ? 'default' : 'pointer', width: '100%' }}
+        >
+          {checking ? '...' : todayDone ? '✓ GM!' : 'GM 🌅'}
+        </button>
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{todayDone ? 'Bugün tamamlandı' : 'Günlük Tx at'}</div>
+      </div>
+
+      {/* Takvim */}
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', flex: '1', minWidth: '220px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>{monthName}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
+          {['Pt','Sa','Ça','Pe','Cu','Ct','Pz'].map(d => (
+            <div key={d} style={{ fontSize: '10px', color: 'var(--text-muted)', paddingBottom: '4px' }}>{d}</div>
+          ))}
+          {Array(startOffset).fill(null).map((_, i) => <div key={`e${i}`} />)}
+          {Array(daysInMonth).fill(null).map((_, i) => {
+            const day = i + 1
+            const done = txDays.has(day)
+            const isToday = day === today
+            return (
+              <div key={day} style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', fontSize: '11px', fontWeight: isToday ? '700' : '400', background: done ? '#1a3a2a' : isToday ? 'var(--border)' : 'transparent', color: done ? '#00b37e' : isToday ? 'var(--text-primary)' : 'var(--text-muted)', position: 'relative' }}>
+                {done ? '✓' : day}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
 function NanoAITab() {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
@@ -733,7 +829,7 @@ export default function App() {
           {activeTab === 'Send' && <SendTab adapter={adapter} />}
           {activeTab === 'NanoAI' && <NanoAITab />}
         </main>
-
+{adapter && <GmCheckin adapter={adapter} />}
         <footer className="app-footer">
           Arc Testnet · USDC · CCTP v2 · Circle AppKit · Built by Maje
         </footer>
